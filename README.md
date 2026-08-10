@@ -12,7 +12,7 @@ A minimal **example integration** (Python) that schedules a content calendar and
 
 An MIT-licensed **content scheduler** example: define a content calendar in plain code, then queue each item with a single `POST /schedule` call carrying `scheduledAt` (ISO-8601 UTC) — ModelVI publishes it on time. No UI, no database, just a readable script you can adapt. It talks only to the public ModelVI partner API.
 
-**Supported platforms (codes):** `ONLYFANS FANSLY FANCENTRO F2F MALOUM LOYALFANS MYMFANS FETLIFE FOURBASED FANVUE BESTFANS FANSYME BREZZELS KNKY`.
+**Supported platforms (codes):** `ONLYFANS FAN FNC F2F MALOUM LOYALFANS MYMFANS FETLIFE FOURBASED FANVUE BESTFANS FANSYME BREZZELS KNKY`.
 
 ## Quickstart
 

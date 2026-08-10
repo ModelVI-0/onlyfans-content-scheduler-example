@@ -31,9 +31,9 @@ SIGNUP_URL = "https://modelvi.com/sign-up"
 # `model` is filled in at runtime from GET /model_list.
 CONTENT_CALENDAR = [
     {"title": "New behind-the-scenes update is live 💫",
-     "platforms": ["ONLYFANS", "FANSLY"], "in_minutes": 5, "type": 1},
+     "platforms": ["ONLYFANS", "FAN"], "in_minutes": 5, "type": 1},
     {"title": "Weekly PPV drop — check your DMs",
-     "platforms": ["ONLYFANS", "FANCENTRO", "MALOUM"], "in_minutes": 60, "type": 3},
+     "platforms": ["ONLYFANS", "FNC", "MALOUM"], "in_minutes": 60, "type": 3},
 ]
 
 
