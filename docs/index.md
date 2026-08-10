@@ -1,54 +1,33 @@
 ---
-title: onlyfans-content-scheduler-example
-description: An honest example integration — schedule and auto-publish a content calendar with the ModelVI posting API.
+title: OnlyFans content scheduler — ModelVI example
+description: Plan a content calendar and auto-publish it on schedule across 14 creator platforms via the ModelVI partner API.
 ---
 
-# onlyfans-content-scheduler-example
+# OnlyFans content scheduler — plan once, publish on schedule
 
-A minimal, open **example integration** that shows developers how to build a
-**content scheduler creators** and agencies can rely on: plan a content calendar,
-queue each item, and **auto-publish** it on schedule through the
-[ModelVI](https://modelvi.com) posting API.
+A minimal, open **example integration** that schedules a content calendar and lets
+[ModelVI](https://modelvi.com/sign-up?utm_source=github&utm_medium=owned-track&utm_campaign=onlyfans-content-scheduler)
+auto-publish each item at its time — across OnlyFans and 13 other creator platforms.
 
-If you are looking for a clean starting point for **posting automation** — a
-content calendar that publishes itself — this repo shows the core pattern in one
-short, well-commented script.
+## How it works
 
-## What you get
+Send each post once with `scheduledAt` (ISO-8601 UTC) via `POST /schedule`; ModelVI
+publishes it on time. Check delivery with `GET /schedule_result`. Responses are
+`{ "success": true, "payload": … }`.
 
-- A tiny **content calendar automation** example (no framework, no database).
-- A `schedule` step that queues content, and a `publish` worker that auto-publishes
-  due items.
-- Credentials read from environment variables — nothing hard-coded.
+## Get started
 
-## Requirements
+1. **[Get your API key →](https://modelvi.com/sign-up?utm_source=github&utm_medium=owned-track&utm_campaign=onlyfans-content-scheduler)**
+2. Reference: [modelvi.com/agent-api](https://modelvi.com/agent-api).
+3. Clone, add your `mvk_` key, adapt the calendar.
 
-You need a **ModelVI API key**. The example does nothing without one.
+## Use cases / keywords
 
-**[→ Get your API key at https://modelvi.com](https://modelvi.com)**
+onlyfans content scheduler · content calendar automation · posting automation ·
+auto-publish scheduler · fansly scheduler · maloum posting · schedule onlyfans posts.
 
-## Quick start
+> **Minimal example.** Authoritative endpoints: [modelvi.com/agent-api](https://modelvi.com/agent-api) ·
+> [modelvi.com/partner-api-docs](https://modelvi.com/partner-api-docs).
 
-```bash
-git clone https://github.com/<your-org>/onlyfans-content-scheduler-example.git
-cd onlyfans-content-scheduler-example
-pip install -r requirements.txt
-cp .env.example .env        # then add your API_KEY + BASE_URL
-
-python scheduler.py schedule   # queue the content calendar
-python scheduler.py publish    # auto-publish due items
-```
-
-## Honest note
-
-This is an **example**, not a finished product. The endpoint paths and request
-bodies in the code are clearly-marked placeholders that show the *shape* of an
-integration. For the real, current endpoints and payloads, always follow the
-official docs.
-
-- **Live endpoints & reference → [https://modelvi.com/docs](https://modelvi.com/docs)**
-- **Sign up / get an API key → [https://modelvi.com](https://modelvi.com)**
-
----
-
-Built as a developer reference for the [ModelVI](https://modelvi.com) posting API.
+- API key: <https://modelvi.com/sign-up?utm_source=github&utm_medium=owned-track&utm_campaign=onlyfans-content-scheduler>
+- Pricing: <https://modelvi.com/pricing>

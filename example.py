@@ -1,161 +1,89 @@
+#!/usr/bin/env python3
 """
-onlyfans-content-scheduler-example  —  scheduler.py
+onlyfans-content-scheduler-example
 
-A minimal, runnable-SHAPED example of a content scheduler for creators:
-define a content calendar, schedule each item, and auto-publish items as they
-come due, using the ModelVI posting API.
+Plan a content calendar and let ModelVI auto-publish each item on schedule,
+across OnlyFans and 13 other creator platforms, via the public ModelVI partner API.
 
-  → Get your API key at https://modelvi.com
-  → Real endpoints & payloads:  https://modelvi.com/docs
+  Get your API key:  https://modelvi.com/sign-up
+  API reference:     https://modelvi.com/agent-api  ·  https://modelvi.com/partner-api-docs
 
-IMPORTANT: This is an EXAMPLE. The endpoint paths and request bodies below are
-clearly-marked PLACEHOLDERS that show the *shape* of an integration. Replace them
-with the real endpoints from https://modelvi.com/docs before using for real. This
-file does not assume or invent a specific live response schema.
+Minimal EXAMPLE (no retries/pagination/media upload). Public partner API only:
+key -> endpoint -> result.
 
 Usage:
-    python scheduler.py schedule    # queue every item in the content calendar
-    python scheduler.py publish     # publish items whose scheduled time has passed
+    python example.py schedule    # queue every item in the content calendar
+    python example.py results     # list delivery status (GET /schedule_result)
 """
 
 import os
 import sys
-import time
 from datetime import datetime, timezone, timedelta
 
 import requests  # pip install requests
 
+BASE_URL = os.environ.get("MODELVI_API_BASE", "https://modelvi.com/api/partner/v1")
+API_KEY = os.environ.get("MODELVI_API_KEY")
+SIGNUP_URL = "https://modelvi.com/sign-up"
 
-# ---------------------------------------------------------------------------
-# Configuration — read from environment (see .env.example). Never hard-code keys.
-# ---------------------------------------------------------------------------
-API_KEY = os.environ.get("API_KEY")
-
-# BASE_URL is a PLACEHOLDER default. Replace with the real base URL from the docs.
-BASE_URL = os.environ.get("BASE_URL", "https://api.modelvi.com")
-
-if not API_KEY:
-    print(
-        "Missing API_KEY.\n"
-        "  → Get your API key at https://modelvi.com and put it in your .env file.",
-        file=sys.stderr,
-    )
-    sys.exit(1)
-
-
-def _headers():
-    """Auth headers. Confirm the exact scheme at https://modelvi.com/docs."""
-    return {
-        "Authorization": f"Bearer {API_KEY}",  # PLACEHOLDER auth scheme — verify in docs
-        "Content-Type": "application/json",
-    }
-
-
-# ---------------------------------------------------------------------------
-# The content calendar.
-#
-# In a real app this comes from a database, spreadsheet, or planning UI. Here it
-# is just a list of dicts so the example stays dependency-free. Each item is a
-# scheduled post: what to say, which media to attach, where, and when.
-#
-# `media_ref` is a reference you control (e.g. an ID or URL you have already
-# uploaded to your own storage / to ModelVI). This example does not include or
-# host any media — you supply your own references.
-# ---------------------------------------------------------------------------
+# Post type: 1 = FREE, 2 = FANS, 3 = PAID.
+# A content calendar: caption + target platform CODES + when + type.
+# `model` is filled in at runtime from GET /model_list.
 CONTENT_CALENDAR = [
-    {
-        "id": "post-001",
-        "caption": "New behind-the-scenes update is live.",
-        "media_ref": "REPLACE_WITH_YOUR_MEDIA_ID_OR_URL",
-        "platform": "example-platform",              # target account/platform key
-        "publish_at": datetime.now(timezone.utc) + timedelta(minutes=5),
-    },
-    {
-        "id": "post-002",
-        "caption": "Weekly roundup — thanks for following along.",
-        "media_ref": "REPLACE_WITH_YOUR_MEDIA_ID_OR_URL",
-        "platform": "example-platform",
-        "publish_at": datetime.now(timezone.utc) + timedelta(hours=24),
-    },
+    {"title": "New behind-the-scenes update is live 💫",
+     "platforms": ["ONLYFANS", "FANSLY"], "in_minutes": 5, "type": 1},
+    {"title": "Weekly PPV drop — check your DMs",
+     "platforms": ["ONLYFANS", "FANCENTRO", "MALOUM"], "in_minutes": 60, "type": 3},
 ]
 
 
-# ---------------------------------------------------------------------------
-# schedule(): register each calendar item with the posting API.
-# ---------------------------------------------------------------------------
+def _headers():
+    if not API_KEY:
+        sys.exit(
+            f"Missing MODELVI_API_KEY. Get a key at {SIGNUP_URL} and export it:\n"
+            f'  export MODELVI_API_KEY="mvk_<keyId>_<secret>"'
+        )
+    return {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
+
+
+def _payload(resp):
+    if resp.status_code == 401:
+        sys.exit(f"Unauthorized (401). Get a valid key at {SIGNUP_URL}")
+    resp.raise_for_status()
+    body = resp.json()
+    return body.get("payload", body)
+
+
+def _first_model_id():
+    models = _payload(requests.get(f"{BASE_URL}/model_list", headers=_headers(), timeout=30))
+    if not models:
+        sys.exit("No models on this account yet — add one in your ModelVI dashboard.")
+    model = models[0] if isinstance(models, list) else models.get("items", [{}])[0]
+    return model.get("id") or model.get("model")
+
+
 def schedule():
-    """Queue every item in the content calendar for future publishing."""
+    """Queue every calendar item with server-side scheduling (POST /schedule)."""
+    model = _first_model_id()
     for item in CONTENT_CALENDAR:
-        payload = {
-            # PLACEHOLDER request body. Field names/shape are illustrative —
-            # use the real ones from https://modelvi.com/docs.
-            "external_id": item["id"],
-            "caption": item["caption"],
-            "media": item["media_ref"],
-            "platform": item["platform"],
-            "scheduled_for": item["publish_at"].isoformat(),
+        when = datetime.now(timezone.utc) + timedelta(minutes=item["in_minutes"])
+        body = {
+            "model": model,
+            "platforms": item["platforms"],
+            "title": item["title"],                       # caption field is `title`
+            "scheduledAt": when.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "type": item["type"],
         }
-
-        # PLACEHOLDER endpoint — replace with the real endpoint from modelvi.com/docs
-        url = f"{BASE_URL}/v1/schedule"
-
-        resp = requests.post(url, json=payload, headers=_headers(), timeout=30)
-
-        # We only report the HTTP status. We do NOT assume a specific response
-        # schema here — inspect resp.json() against the real docs in your app.
-        print(f"[schedule] {item['id']} -> HTTP {resp.status_code}")
+        result = _payload(requests.post(f"{BASE_URL}/schedule", json=body,
+                                        headers=_headers(), timeout=30))
+        print(f"[scheduled] {item['title'][:32]!r} -> {', '.join(item['platforms'])}: {result}")
 
 
-# ---------------------------------------------------------------------------
-# publish(): the auto-publish worker.
-#
-# Run this on a schedule (cron, systemd timer, a container loop, a serverless
-# cron). It asks the API for anything due and publishes it. Below we show BOTH
-# common shapes so you can pick whichever the real API supports:
-#
-#   (A) server-side scheduling: you already sent `scheduled_for`, and the API
-#       publishes on time by itself — the worker just polls status.
-#   (B) client-side scheduling: you keep the calendar and POST a publish call
-#       for each item once its time has passed.
-#
-# This example implements (B) against the local CONTENT_CALENDAR so the pattern
-# is fully visible. Prefer (A) if the real API supports it.
-# ---------------------------------------------------------------------------
-def publish():
-    """Publish every calendar item whose scheduled time has passed."""
-    now = datetime.now(timezone.utc)
-    due = [i for i in CONTENT_CALENDAR if i["publish_at"] <= now]
-
-    if not due:
-        next_at = min((i["publish_at"] for i in CONTENT_CALENDAR), default=None)
-        print(f"[publish] nothing due yet. Next item at: {next_at}")
-        return
-
-    for item in due:
-        payload = {
-            # PLACEHOLDER request body — align with https://modelvi.com/docs
-            "external_id": item["id"],
-            "caption": item["caption"],
-            "media": item["media_ref"],
-            "platform": item["platform"],
-        }
-
-        # PLACEHOLDER endpoint — replace with the real endpoint from modelvi.com/docs
-        url = f"{BASE_URL}/v1/publish"
-
-        resp = requests.post(url, json=payload, headers=_headers(), timeout=30)
-        print(f"[publish] {item['id']} -> HTTP {resp.status_code}")
-
-
-def main():
-    command = sys.argv[1] if len(sys.argv) > 1 else "help"
-    if command == "schedule":
-        schedule()
-    elif command == "publish":
-        publish()
-    else:
-        print(__doc__.strip())
+def results():
+    """List scheduled-post delivery status (GET /schedule_result)."""
+    print(_payload(requests.get(f"{BASE_URL}/schedule_result", headers=_headers(), timeout=30)))
 
 
 if __name__ == "__main__":
-    main()
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "help"
+    {"schedule": schedule, "results": results}.get(cmd, lambda: print(__doc__.strip()))()
